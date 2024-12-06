@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>부산광역시 119소방출동정보</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7c0fd3e8259fada9fd77f430b455e8a4&libraries=services"></script>
+</head>
+<body>
+  <h1>부산광역시 119소방출동정보</h1>
+
+  <div class="region-buttons">
+    <!-- 구별 버튼 동적으로 추가 -->
+  </div>
+
+  <div class="container">
+    <div id="map"></div>
+    <div id="fire-station-list" class="fire-station-list">
+      <h3>소방서 목록</h3>
+      <ul id="fire-station-items"></ul>
+    </div>
+    <div id="detail-info" class="detail-info">
+      <h3>상세 정보</h3>
+      <div id="details"></div>
+    </div>
+  </div>
+
+  <script>
+    const apiUrl = "https://apis.data.go.kr/6260000/Busan119InfoService/getTodayInfo?serviceKey=yFPitygU2QfYS6aMV2iKuu5LWvUNJRo7BO3UTcdewom3aDkb8MrY2rR78tgQ9W3j%2BTFF6cScdVXmPSws46rm7Q%3D%3D&numOfRows=50&pageNo=1&resultType=json";
+
+    const regions = {
+      "강서구": { center: { lat: 35.2123, lng: 128.9801 } },
+      "금정구": { center: { lat: 35.2423, lng: 129.0920 } },
+      "기장군": { center: { lat: 35.2448, lng: 129.2217 } },
+      "남구": { center: { lat: 35.1368, lng: 129.0863 } },
+      "동구": { center: { lat: 35.1271, lng: 129.0560 } },
+      "동래구": { center: { lat: 35.2043, lng: 129.0794 } },
+      "부산진구": { center: { lat: 35.1598, lng: 129.0471 } },
+      "북구": { center: { lat: 35.2113, lng: 129.0258 } },
+      "사상구": { center: { lat: 35.1519, lng: 128.9882 } },
+      "사하구": { center: { lat: 35.1046, lng: 128.9739 } },
+      "서구": { center: { lat: 35.0912, lng: 129.0208 } },
+      "수영구": { center: { lat: 35.1423, lng: 129.1142 } },
+      "연제구": { center: { lat: 35.1848, lng: 129.0785 } },
+      "영도구": { center: { lat: 35.0864, lng: 129.0680 } },
+      "중구": { center: { lat: 35.1068, lng: 129.0327 } },
+      "해운대구": { center: { lat: 35.1632, lng: 129.1636 } },
+    };
+
+    const fireStations = {}; // 구별 소방서 저장
+    const markers = {}; // 마커 저장
+    let map, currentInfowindow;
+
+    window.onload = async function () {
+      const mapContainer = document.getElementById('map');
+      const mapOption = {
+        center: new kakao.maps.LatLng(35.1796, 129.0756), // 부산광역시 중심 좌표
+        level: 8 // 지도 확대 레벨
+      };
+
+      map = new kakao.maps.Map(mapContainer, mapOption);
+      currentInfowindow = null;
+
+      // 구별 버튼 동적 생성
+      const regionButtons = document.querySelector('.region-buttons');
+      for (let region in regions) {
+        const button = document.createElement('button');
+        button.className = 'region-btn';
+        button.textContent = region;
+        button.addEventListener('click', () => focusRegion(region));
+        regionButtons.appendChild(button);
+      }
+
+      await fetchFireStationData();
+    };
+
+    // API 데이터 가져오기
+    async function fetchFireStationData() {
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    if (data.response.body.items.item) {
+      const items = data.response.body.items.item;
+
+      items.forEach(item => {
+        const { dsraddr, juriswardid1, juriswardid2, dsrkndcd, dsrsizecd, dsrclscd } = item;
+
+        console.log(`주소: ${dsraddr}, 구 이름: ${juriswardid1}`); // 데이터 로깅
+
+        // 구별로 소방서 목록에 추가
+        if (!fireStations[juriswardid1]) fireStations[juriswardid1] = [];
+        fireStations[juriswardid1].push({
+          name: juriswardid2,
+          address: dsraddr,
+          coords: null,
+          data: { dsraddr, juriswardid1, juriswardid2, dsrkndcd, dsrsizecd, dsrclscd }
+        });
+
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.addressSearch(dsraddr, (result, status) => {
+          if (status === kakao.maps.services.Status.OK) {
+            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+
+            const marker = new kakao.maps.Marker({
+              map: map,
+              position: coords
+            });
+
+            const infowindow = new kakao.maps.InfoWindow({
+              content: `<div style="padding:5px;"><strong>${juriswardid2}</strong><br>${dsraddr}</div>`
+            });
+
+            kakao.maps.event.addListener(marker, 'click', () => {
+              if (currentInfowindow) currentInfowindow.close();
+              infowindow.open(map, marker);
+              currentInfowindow = infowindow;
+
+              updateDetails(item);
+            });
+
+            // 좌표 저장
+            fireStations[juriswardid1].find(station => station.address === dsraddr).coords = coords;
+
+            if (!markers[juriswardid1]) markers[juriswardid1] = [];
+            markers[juriswardid1].push(marker);
+          }
+        });
+      });
+    }
+  } catch (error) {
+    console.error("API 호출 중 오류 발생:", error);
+  }
+}
+
+
+    // 구별 소방서 목록 표시
+    function focusRegion(region) {
+      const listElement = document.getElementById('fire-station-items');
+      listElement.innerHTML = '';  // 기존 목록 비우기
+
+      // 지도 중심 이동 (더 크게 확대)
+      if (regions[region]) {
+        const { center } = regions[region];
+        map.setCenter(new kakao.maps.LatLng(center.lat, center.lng));
+        map.setLevel(6); // 확대 정도 조정
+      }
+
+      // 소방서 목록 표시
+      if (fireStations[region]) {
+        fireStations[region].forEach(station => {
+          const li = document.createElement('li');
+          li.textContent = `${station.name} (${station.address})`;
+          li.addEventListener('click', () => {
+            if (station.coords) {
+              map.panTo(station.coords);
+              kakao.maps.event.trigger(markers[region].find(marker => marker.getPosition().equals(station.coords)), 'click');
+            }
+          });
+          listElement.appendChild(li);
+        });
+      } else {
+        listElement.innerHTML = '<li>해당 구역에 소방서 정보가 없습니다.</li>';
+      }
+    }
+
+    // 상세 정보 업데이트
+    function updateDetails(data) {
+      const detailsElement = document.getElementById('details');
+      detailsElement.innerHTML = ` 
+        <p><strong>관할서:</strong> ${data.juriswardid1}</p>
+        <p><strong>주소:</strong> ${data.dsraddr}</p>
+        <p><strong>안전센터:</strong> ${data.juriswardid2}</p>
+        <p><strong>재난 종류:</strong> ${data.dsrkndcd}</p>
+        <p><strong>규모:</strong> ${data.dsrsizecd}</p>
+        <p><strong>등급:</strong> ${data.dsrclscd}</p>
+      `;
+    }
+  </script>
+</body>
+</html>
