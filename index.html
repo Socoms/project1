@@ -18,6 +18,7 @@
     <div id="map"></div>
     <div id="fire-station-list" class="fire-station-list">
       <h3>소방서 목록</h3>
+      <input type="text" id="search" placeholder="소방서 검색..." onkeyup="searchFireStations()">
       <ul id="fire-station-items"></ul>
     </div>
     <div id="detail-info" class="detail-info">
@@ -68,7 +69,7 @@
         const button = document.createElement('button');
         button.className = 'region-btn';
         button.textContent = region;
-        button.addEventListener('click', () => focusRegion(region));
+        button.addEventListener('click', () => filterFireStationsByRegion(region));
         regionButtons.appendChild(button);
       }
 
@@ -77,98 +78,101 @@
 
     // API 데이터 가져오기
     async function fetchFireStationData() {
-  try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-    if (data.response.body.items.item) {
-      const items = data.response.body.items.item;
+        if (data.response.body.items.item) {
+          const items = data.response.body.items.item;
 
-      items.forEach(item => {
-        const { dsraddr, juriswardid1, juriswardid2, dsrkndcd, dsrsizecd, dsrclscd } = item;
+          items.forEach(item => {
+            const { dsraddr, juriswardid1, juriswardid2 } = item;
 
-        console.log(`주소: ${dsraddr}, 구 이름: ${juriswardid1}`); // 데이터 로깅
+            // 주소에서 구 이름 추출하기
+            const regionFromAddress = dsraddr.split(' ')[1]; // "부산 [구] ..."에서 [구] 추출
 
-        // 구별로 소방서 목록에 추가
-        if (!fireStations[juriswardid1]) fireStations[juriswardid1] = [];
-        fireStations[juriswardid1].push({
-          name: juriswardid2,
-          address: dsraddr,
-          coords: null,
-          data: { dsraddr, juriswardid1, juriswardid2, dsrkndcd, dsrsizecd, dsrclscd }
-        });
-
-        const geocoder = new kakao.maps.services.Geocoder();
-        geocoder.addressSearch(dsraddr, (result, status) => {
-          if (status === kakao.maps.services.Status.OK) {
-            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-
-            const marker = new kakao.maps.Marker({
-              map: map,
-              position: coords
+            // 구별로 소방서 목록에 추가
+            if (!fireStations[regionFromAddress]) fireStations[regionFromAddress] = [];
+            fireStations[regionFromAddress].push({
+              name: juriswardid2,
+              address: dsraddr,
+              data: item,
             });
 
-            const infowindow = new kakao.maps.InfoWindow({
-              content: `<div style="padding:5px;"><strong>${juriswardid2}</strong><br>${dsraddr}</div>`
+            // 주소를 바탕으로 지도에 마커 추가
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.addressSearch(dsraddr, (result, status) => {
+              if (status === kakao.maps.services.Status.OK) {
+                const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+
+                const marker = new kakao.maps.Marker({
+                  map: map,
+                  position: coords
+                });
+
+                const infowindow = new kakao.maps.InfoWindow({
+                  content: `<div style="padding:5px;"><strong>${juriswardid2}</strong><br>${dsraddr}</div>`
+                });
+
+                kakao.maps.event.addListener(marker, 'click', () => {
+                  if (currentInfowindow) currentInfowindow.close();
+                  infowindow.open(map, marker);
+                  currentInfowindow = infowindow;
+                  updateDetails(item); // 소방서 클릭 시 상세 정보 업데이트
+                });
+
+                // 마커 저장
+                if (!markers[regionFromAddress]) markers[regionFromAddress] = [];
+                markers[regionFromAddress].push(marker);
+              } else {
+                console.error("주소 검색 실패: ", dsraddr);  // 오류 로그
+              }
             });
-
-            kakao.maps.event.addListener(marker, 'click', () => {
-              if (currentInfowindow) currentInfowindow.close();
-              infowindow.open(map, marker);
-              currentInfowindow = infowindow;
-
-              updateDetails(item);
-            });
-
-            // 좌표 저장
-            fireStations[juriswardid1].find(station => station.address === dsraddr).coords = coords;
-
-            if (!markers[juriswardid1]) markers[juriswardid1] = [];
-            markers[juriswardid1].push(marker);
-          }
-        });
-      });
-    }
-  } catch (error) {
-    console.error("API 호출 중 오류 발생:", error);
-  }
-}
-
-
-    // 구별 소방서 목록 표시
-    function focusRegion(region) {
-      const listElement = document.getElementById('fire-station-items');
-      listElement.innerHTML = '';  // 기존 목록 비우기
-
-      // 지도 중심 이동 (더 크게 확대)
-      if (regions[region]) {
-        const { center } = regions[region];
-        map.setCenter(new kakao.maps.LatLng(center.lat, center.lng));
-        map.setLevel(6); // 확대 정도 조정
+          });
+          renderFireStationList(); // 데이터 로딩 후 소방서 목록 렌더링
+        } else {
+          console.error("API 데이터에 소방서 항목이 없습니다.");
+        }
+      } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
       }
+    }
 
-      // 소방서 목록 표시
-      if (fireStations[region]) {
+    // 소방서 목록 렌더링
+    function renderFireStationList() {
+      const listElement = document.getElementById('fire-station-items');
+      listElement.innerHTML = ''; // 기존 목록 비우기
+
+      for (let region in fireStations) {
         fireStations[region].forEach(station => {
           const li = document.createElement('li');
-          li.textContent = `${station.name} (${station.address})`;
+          li.className = 'fire-station-item';
+          li.innerHTML = `
+            <span>${station.name}</span>
+            <small>(${station.address})</small>
+          `;
+
+          // 소방서 클릭 시 동작 추가
           li.addEventListener('click', () => {
-            if (station.coords) {
-              map.panTo(station.coords);
-              kakao.maps.event.trigger(markers[region].find(marker => marker.getPosition().equals(station.coords)), 'click');
+            if (station.data.coords) {
+              map.panTo(station.data.coords); // 지도 이동
+              const marker = markers[region].find(marker =>
+                marker.getPosition().equals(station.data.coords)
+              );
+              kakao.maps.event.trigger(marker, 'click'); // 마커 클릭 이벤트 발생
+              updateDetails(station.data); // 상세 정보 업데이트
             }
           });
+
           listElement.appendChild(li);
         });
-      } else {
-        listElement.innerHTML = '<li>해당 구역에 소방서 정보가 없습니다.</li>';
       }
     }
 
     // 상세 정보 업데이트
     function updateDetails(data) {
       const detailsElement = document.getElementById('details');
-      detailsElement.innerHTML = ` 
+      detailsElement.innerHTML = `
         <p><strong>관할서:</strong> ${data.juriswardid1}</p>
         <p><strong>주소:</strong> ${data.dsraddr}</p>
         <p><strong>안전센터:</strong> ${data.juriswardid2}</p>
@@ -176,6 +180,78 @@
         <p><strong>규모:</strong> ${data.dsrsizecd}</p>
         <p><strong>등급:</strong> ${data.dsrclscd}</p>
       `;
+    }
+
+    // 구별 소방서 목록 필터링 및 렌더링
+    function filterFireStationsByRegion(region) {
+      const listElement = document.getElementById('fire-station-items');
+      listElement.innerHTML = ''; // 기존 목록 비우기
+
+      // 해당 구에 속한 소방서만 필터링
+      const filteredStations = fireStations[region] || [];
+      
+      // 필터링된 소방서가 없으면 "정보 없음" 표시
+      if (filteredStations.length === 0) {
+        listElement.innerHTML = '<li>해당 구역에 소방서 정보가 없습니다.</li>';
+        return;
+      }
+
+      filteredStations.forEach(station => {
+        const li = document.createElement('li');
+        li.className = 'fire-station-item';
+        li.innerHTML = `
+          <span>${station.name}</span>
+          <small>(${station.address})</small>
+        `;
+        li.addEventListener('click', () => {
+          if (station.data.coords) {
+            map.panTo(station.data.coords);
+            const marker = markers[region].find(m =>
+              m.getPosition().equals(station.data.coords)
+            );
+            if (marker) kakao.maps.event.trigger(marker, 'click');
+            updateDetails(station.data);
+          }
+        });
+        listElement.appendChild(li);
+      });
+    }
+
+    // 소방서 검색
+    function searchFireStations() {
+      const searchQuery = document.getElementById('search').value.toLowerCase();
+      const filteredStations = [];
+      for (let region in fireStations) {
+        fireStations[region].forEach(station => {
+          if (station.name.toLowerCase().includes(searchQuery) || station.address.toLowerCase().includes(searchQuery)) {
+            filteredStations.push(station);
+          }
+        });
+      }
+      
+      const listElement = document.getElementById('fire-station-items');
+      listElement.innerHTML = ''; // 기존 목록 비우기
+
+      // 필터링된 소방서 목록 표시
+      filteredStations.forEach(station => {
+        const li = document.createElement('li');
+        li.className = 'fire-station-item';
+        li.innerHTML = `
+          <span>${station.name}</span>
+          <small>(${station.address})</small>
+        `;
+        li.addEventListener('click', () => {
+          if (station.data.coords) {
+            map.panTo(station.data.coords);
+            const marker = markers[station.data.juriswardid1].find(m =>
+              m.getPosition().equals(station.data.coords)
+            );
+            if (marker) kakao.maps.event.trigger(marker, 'click');
+            updateDetails(station.data);
+          }
+        });
+        listElement.appendChild(li);
+      });
     }
   </script>
 </body>
