@@ -1,166 +1,187 @@
-/* 기본 설정 */
-html, body {
-  width: 100%;
-  height: 100%;
+/* 기본적인 body 스타일 */
+body {
+  font-family: 'Arial', sans-serif;
   margin: 0;
   padding: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: #f9f9f9; /* 밝은 배경 */
+  background: linear-gradient(to right, #f0f9ff, #cbebf9); /* 부드러운 배경 그라디언트 */
+  box-sizing: border-box;
 }
 
+/* 페이지 제목 스타일 */
 h1 {
+  background-color: #4CAF50;
+  color: white;
   text-align: center;
-  background: linear-gradient(135deg, #3498db, #2c3e50); /* 파란색 그라디언트 */
-  color: #fff;
-  font-size: 2.5rem;
-  padding: 20px 0;
+  padding: 20px;
   margin: 0;
-  border-bottom: 3px solid #2c3e50; /* 아래 테두리 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* 부드러운 그림자 */
+  font-size: 24px;
+  box-sizing: border-box;
 }
 
-/* 구별 버튼 */
+/* 전체 컨테이너 스타일 */
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 20px;
+  gap: 20px; /* 요소 간 간격 설정 */
+  margin-top: 20px;
+  box-sizing: border-box;
+}
+
+/* 지도 스타일 */
+#map {
+  flex: 1;
+  height: 500px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #e8f0f5, #ffffff); /* 지도 배경 그라디언트 */
+}
+
+/* 소방서 목록 스타일 */
+.fire-station-list {
+  width: 100%;
+  max-width: 350px; /* 최대 너비 제한 */
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  max-height: 500px; /* 최대 높이 설정 */
+  overflow-y: auto; /* 내용이 넘칠 경우 스크롤 추가 */
+}
+
+.fire-station-list h3 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+#search {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+#fire-station-items {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+
+.fire-station-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s; /* 애니메이션 추가 */
+  font-size: 14px;
+}
+
+.fire-station-item:hover {
+  background-color: #f0f0f0;
+  transform: scale(1.05); /* 항목 클릭 시 살짝 커지는 효과 */
+}
+
+.fire-station-item span {
+  font-weight: bold;
+}
+
+.fire-station-item small {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Font Awesome 아이콘을 소방서 목록 항목 옆에 추가 */
+.fire-station-item::before {
+  content: '\f135'; /* Font Awesome 소방 아이콘의 unicode 값 */
+  font-family: 'Font Awesome 5 Free'; /* Font Awesome 폰트 사용 */
+  font-weight: 900; /* 아이콘의 두께 설정 */
+  margin-right: 10px;
+  vertical-align: middle;
+  font-size: 18px; /* 아이콘 크기 */
+}
+
+/* 상세 정보 스타일 */
+.detail-info {
+  width: 100%;
+  max-width: 350px; /* 최대 너비 제한 */
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.detail-info h3 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+#details {
+  font-size: 14px;
+}
+
+p {
+  margin: 8px 0;
+}
+
+strong {
+  color: #333;
+}
+
+/* 버튼 스타일 */
 .region-buttons {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
-  padding: 10px 15px;
-  background: #ffffff;
-  border-bottom: 2px solid #e3e3e3; /* 구분선 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); /* 부드러운 그림자 */
+  margin-bottom: 20px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .region-btn {
   padding: 10px 20px;
   margin: 5px;
-  background: #3498db;
-  color: #fff;
+  background-color: #4CAF50;
+  color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s;
 }
 
 .region-btn:hover {
-  background: #2c3e50; /* 어두운 파란색 */
-  transform: scale(1.05); /* 살짝 확대 */
+  background-color: #45a049;
 }
 
-.region-btn:active {
-  background: #1a252f; /* 클릭 시 더 어두운 색 */
-}
-
-/* 전체 컨테이너 */
+/* 섹션 간 구분선 추가 */
 .container {
-  display: flex;
-  height: calc(100% - 140px); /* 제목과 버튼 제외한 높이 */
+  border-top: 2px solid #ddd; /* 지도와 목록 구분 */
+  padding-top: 20px;
 }
 
-/* 지도 */
-#map {
-  flex: 7; /* 7:3 비율 */
-  height: 100%;
-  border-right: 2px solid #e3e3e3;
-  background: #eaeaea; /* 로드 전 배경색 */
-}
-
-/* 소방서 목록 */
 .fire-station-list {
-  flex: 3; /* 7:3 비율 */
-  padding: 20px;
-  background: #ffffff;
-  border-right: 2px solid #e3e3e3;
-  overflow-y: auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 부드러운 그림자 */
-}
-
-.fire-station-list h3 {
-  margin: 0 0 15px;
-  color: #2c3e50;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #3498db; /* 하단 구분선 */
-  padding-bottom: 5px;
-}
-
-.fire-station-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.fire-station-list li {
-  padding: 10px;
-  margin-bottom: 10px;
-  background: #f9f9f9;
-  border: 1px solid #e3e3e3;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.fire-station-list li:hover {
-  background: #e3e3e3;
-  transform: translateX(5px); /* 살짝 오른쪽으로 이동 */
-}
-
-.fire-station-list li:active {
-  background: #d1d1d1;
-}
-
-/* 상세 정보 창 */
-.detail-info {
-  flex: 3; /* 7:3 비율 */
-  padding: 20px;
-  background: #ffffff;
-  overflow-y: auto;
-  border-left: 2px solid #e3e3e3;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 부드러운 그림자 */
-}
-
-.detail-info h3 {
-  margin: 0 0 15px;
-  color: #2c3e50;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #3498db; /* 하단 구분선 */
-  padding-bottom: 5px;
-}
-
-.detail-info p {
-  color: #555;
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 10px;
+  border-left: 2px solid #ddd; /* 목록과 상세 정보 구분 */
   padding-left: 20px;
-  position: relative;
 }
 
-/* 상세 정보 내용 앞에 아이콘 추가 */
-.detail-info p:before {
-  content: '🔍'; /* 아이콘 삽입 */
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.3rem;
-  color: #3498db;
-}
-
-/* 반응형 디자인 */
+/* 모바일 대응 */
 @media (max-width: 768px) {
   .container {
-    flex-direction: column; /* 세로 정렬 */
+    flex-direction: column;
+    align-items: center;
   }
 
   #map {
-    flex: none;
-    height: 50vh; /* 지도 높이 절반 */
+    width: 100%;
+    height: 400px;
   }
 
-  .fire-station-list, .detail-info {
-    flex: none;
-    height: auto;
-    border: none;
-    box-shadow: none;
+  .fire-station-list,
+  .detail-info {
+    width: 100%;
+    margin-top: 20px;
   }
 }
